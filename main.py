@@ -23,8 +23,9 @@ def game_loop(ui_queue: multiprocessing.Queue, comps: CompsManager) -> None:
 
 if __name__ == "__main__":
     if settings.LEAGUE_CLIENT_PATH is None:
+        msg = "No league client path specified. Please set the path in settings.py"
         raise ValueError(
-            "No league client path specified. Please set the path in settings.py"
+            msg,
         )
     comps_manager = CompsManager()
     comps_manager.champions = {
@@ -92,11 +93,12 @@ if __name__ == "__main__":
     message_queue = multiprocessing.Queue()
     overlay: UI = UI(message_queue)
     game_thread = multiprocessing.Process(
-        target=game_loop, args=(message_queue, comps_manager)
+        target=game_loop,
+        args=(message_queue, comps_manager),
     )
 
     print(
-        "\nOriginal version - https://github.com/jfd02/TFT-OCR-BOT\n\nAutoComps version - https://github.com/Sizzzles/TFT-OCR-BOT\n"
+        "\nOriginal version - https://github.com/jfd02/TFT-OCR-BOT\n\nAutoComps version - https://github.com/Sizzzles/TFT-OCR-BOT\n",
     )
 
     yes_choices = ["yes", "y"]
@@ -104,7 +106,7 @@ if __name__ == "__main__":
 
     if os.path.isfile("cached_data/cached9.json"):
         print(
-            f'Champions and comps already exist. Last modified: {time.ctime(os.path.getmtime("cached_data/cached9.json"))}'
+            f'Champions and comps already exist. Last modified: {time.ctime(os.path.getmtime("cached_data/cached9.json"))}',
         )
         while True:
             comp_input = input("Do you want to update comps? (y/n) ")

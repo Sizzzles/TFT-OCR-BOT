@@ -93,7 +93,8 @@ def get_shop(comps: CompsManager) -> list:
     thread_list: list = []
     for shop_index, name_pos in enumerate(screen_coords.CHAMP_NAME_POS):
         thread = threading.Thread(
-            target=get_champ, args=(screen_capture, name_pos, shop_index, shop, comps)
+            target=get_champ,
+            args=(screen_capture, name_pos, shop_index, shop, comps),
         )
         thread_list.append(thread)
     for thread in thread_list:

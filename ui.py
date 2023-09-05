@@ -27,9 +27,9 @@ class UI:
         self.set_clickthrough(self.root.winfo_id())
 
     @classmethod
-    def rgb_convert(cls, rgb: tuple) -> str:
+    def rgb_convert(cls: type, rgb: tuple) -> str:
         """Turns tuple rgb value into string for use by the UI"""
-        return "#%02x%02x%02x" % rgb  # pylint: disable=consider-using-f-string
+        return "#{:02x}{:02x}{:02x}".format(*rgb)
 
     def setup_window_size(self) -> None:
         """Setups window size"""

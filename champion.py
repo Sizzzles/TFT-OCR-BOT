@@ -9,7 +9,13 @@ class Champion:
     # pylint: disable=too-many-instance-attributes,too-few-public-methods,too-many-arguments
 
     def __init__(
-        self, name: str, coords: tuple, build, slot: int, size: int, final_comp: bool
+        self,
+        name: str,
+        coords: tuple,
+        build,
+        slot: int,
+        size: int,
+        final_comp: bool,
     ) -> None:
         self.name: str = name
         self.coords: tuple = coords

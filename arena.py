@@ -50,11 +50,11 @@ class Arena:
                 if potential in portal:
                     print(f"  Voted for: {portal}")
                     mk_functions.left_click(
-                        screen_coords.PORTALS_LOC[portals.index(portal)].get_coords()
+                        screen_coords.PORTALS_LOC[portals.index(portal)].get_coords(),
                     )
                     sleep(0.7)
                     mk_functions.left_click(
-                        screen_coords.PORTALS_VOTES[portals.index(portal)].get_coords()
+                        screen_coords.PORTALS_VOTES[portals.index(portal)].get_coords(),
                     )
                     return
 
@@ -68,12 +68,14 @@ class Arena:
         mk_functions.right_click(screen_coords.REGION_AUGMENT_LOC.get_coords())
         sleep(1)
         region: str = ocr.get_text(
-            screenxy=screen_coords.REGION_AUGMENT_POS.get_coords(), scale=3, psm=7
+            screenxy=screen_coords.REGION_AUGMENT_POS.get_coords(),
+            scale=3,
+            psm=7,
         )
         try:
             if "Marus Omegnum" in region:
                 print(
-                    f"  Region Augment: {region}. Picking up Tacticians Crown at round 2-5 and 4-5"
+                    f"  Region Augment: {region}. Picking up Tacticians Crown at round 2-5 and 4-5",
                 )
                 self.marus_omegnum = True
             if "Stillwater Hold" in region:
@@ -155,7 +157,7 @@ class Arena:
                 mk_functions.left_click(
                     screen_coords.BOARD_LOC[
                         self.unknown_slots[len(self.board_unknown)]
-                    ].get_coords()
+                    ].get_coords(),
                 )
                 self.bench[index] = None
                 self.board_unknown.append(champion)
@@ -196,7 +198,7 @@ class Arena:
                     if valid_champ:
                         none_slot: int = arena_functions.empty_slot()
                         mk_functions.left_click(
-                            screen_coords.BUY_LOC[champion[0]].get_coords()
+                            screen_coords.BUY_LOC[champion[0]].get_coords(),
                         )
                         sleep(0.2)
                         self.bench[none_slot] = f"{champion[1]}"
@@ -216,7 +218,7 @@ class Arena:
             mk_functions.press_e(
                 screen_coords.BOARD_LOC[
                     self.unknown_slots[len(self.board_unknown) - 1]
-                ].get_coords()
+                ].get_coords(),
             )
             self.board_unknown.pop()
             self.board_size -= 1
@@ -229,14 +231,13 @@ class Arena:
                 print("  Selling unknown champion")
                 mk_functions.press_e(screen_coords.BENCH_LOC[index].get_coords())
                 self.bench[index] = None
-            elif isinstance(champion, Champion):
-                if (
-                    champion.name not in self.champs_to_buy
-                    and champion.name in self.board_names
-                ):
-                    print("  Selling unknown champion")
-                    mk_functions.press_e(screen_coords.BENCH_LOC[index].get_coords())
-                    self.bench[index] = None
+            elif isinstance(champion, Champion) and (
+                champion.name not in self.champs_to_buy
+                and champion.name in self.board_names
+            ):
+                print("  Selling unknown champion")
+                mk_functions.press_e(screen_coords.BENCH_LOC[index].get_coords())
+                self.bench[index] = None
 
     def clear_anvil(self) -> None:
         """Clears anvil on the bench, selects middle item"""
@@ -271,7 +272,7 @@ class Arena:
         if item in game_assets.FULL_ITEMS:
             if item in champ.build:
                 mk_functions.left_click(
-                    screen_coords.ITEM_POS[item_index][0].get_coords()
+                    screen_coords.ITEM_POS[item_index][0].get_coords(),
                 )
                 mk_functions.left_click(champ.coords)
                 print(f"  Placed {item} on {champ.name}")
@@ -282,18 +283,18 @@ class Arena:
             item_to_move: None = None
             for build_item in champ.build:
                 build_item_components: list = list(
-                    game_assets.FULL_ITEMS.get(build_item, [])
+                    game_assets.FULL_ITEMS.get(build_item, []),
                 )
                 if item in build_item_components:
                     item_to_move: None = item
                     build_item_components.remove(item_to_move)
                     champ.current_building.append(
-                        (build_item, build_item_components[0])
+                        (build_item, build_item_components[0]),
                     )
                     champ.build.remove(build_item)
             if item_to_move is not None:
                 mk_functions.left_click(
-                    screen_coords.ITEM_POS[item_index][0].get_coords()
+                    screen_coords.ITEM_POS[item_index][0].get_coords(),
                 )
                 mk_functions.left_click(champ.coords)
                 print(f"  Placed {item} on {champ.name}")
@@ -302,7 +303,7 @@ class Arena:
             for builditem in champ.current_building:
                 if item == builditem[1]:
                     mk_functions.left_click(
-                        screen_coords.ITEM_POS[item_index][0].get_coords()
+                        screen_coords.ITEM_POS[item_index][0].get_coords(),
                     )
                     mk_functions.left_click(champ.coords)
                     champ.completed_items.append(builditem[0])
@@ -316,7 +317,7 @@ class Arena:
         """Checks if the item passed in arg one is valid"""
         sleep(0.25)
         mk_functions.press_e(
-            screen_coords.BOARD_LOC[self.unknown_slots[0]].get_coords()
+            screen_coords.BOARD_LOC[self.unknown_slots[0]].get_coords(),
         )
         self.board_unknown.pop(0)
         self.board_size -= 1
@@ -329,7 +330,7 @@ class Arena:
                 self.bench[index] = None
 
         self.champs_to_buy = list(
-            filter(f"{champion.name}".__ne__, self.champs_to_buy)
+            filter(f"{champion.name}".__ne__, self.champs_to_buy),
         )  # Remove all instances of champion in champs_to_buy
 
         mk_functions.press_e(champion.coords)
@@ -396,7 +397,7 @@ class Arena:
                     none_slot: int = arena_functions.empty_slot()
                     if none_slot != -1:
                         mk_functions.left_click(
-                            screen_coords.BUY_LOC[champion[0]].get_coords()
+                            screen_coords.BUY_LOC[champion[0]].get_coords(),
                         )
                         print(f"    Purchased {champion[1]}")
                         self.bought_champion(champion[1], none_slot)
@@ -405,7 +406,7 @@ class Arena:
                         """Try to buy champ 3 when bench is full"""
                         print(f"  Board is full but want {champion[1]}")
                         mk_functions.left_click(
-                            screen_coords.BUY_LOC[champion[0]].get_coords()
+                            screen_coords.BUY_LOC[champion[0]].get_coords(),
                         )
                         game_functions.default_pos()
                         sleep(0.5)
@@ -439,7 +440,7 @@ class Arena:
                 if potential in augment:
                     print(f"  Choosing augment: {augment}")
                     mk_functions.left_click(
-                        screen_coords.AUGMENT_LOC[augments.index(augment)].get_coords()
+                        screen_coords.AUGMENT_LOC[augments.index(augment)].get_coords(),
                     )
                     return
 
@@ -452,7 +453,7 @@ class Arena:
             self.pick_augment()
 
         print(
-            "  [!] No priority or backup augment found, undefined behavior may occur for the rest of the round"
+            "  [!] No priority or backup augment found, undefined behavior may occur for the rest of the round",
         )
         mk_functions.left_click(screen_coords.AUGMENT_LOC[0].get_coords())
 

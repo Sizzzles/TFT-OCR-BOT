@@ -30,8 +30,7 @@ def image_thresholding(image: ImageGrab.Image) -> Any:
 def image_array(image: ImageGrab.Image) -> Any:
     """Turns the image into an array"""
     image = np.array(image)
-    image = image[..., :3]
-    return image
+    return image[..., :3]
 
 
 def image_resize(image: int, scale: int) -> Any:

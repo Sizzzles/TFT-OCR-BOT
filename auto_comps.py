@@ -157,12 +157,14 @@ def __LoadLolChessComps(
             if each_slot is not None:
                 try:
                     champion_name = (
-                        list(
-                            filter(
-                                lambda e: e["key"] == each_slot.get("champion"),
-                                query_data.get("champions"),
-                            ),
-                        )[0]["name"]
+                        next(
+                            iter(
+                                filter(
+                                    lambda e: e["key"] == each_slot.get("champion"),
+                                    query_data.get("champions"),
+                                )
+                            )
+                        )["name"]
                         .replace("BelVeth", "Bel'Veth")
                         .replace("Ryze: BandleCity", "Ryze")
                         .replace("Ryze: Demacia", "Ryze")
@@ -241,7 +243,7 @@ def LoadChampionsAndComps(comp_manager: CompsManager) -> None:
     )
     for i in range(len(comp_manager.comps_loaded)):
         temp = ",".join(comp_manager.comps_loaded[i][1])
-        print(f"{str(i)} - {comp_manager.comps_loaded[i][0]} [{temp}]")
+        print(f"{i!s} - {comp_manager.comps_loaded[i][0]} [{temp}]")
 
     inputed = ""
     inputed_file_path = os.path.join(cached_path, "inputed")

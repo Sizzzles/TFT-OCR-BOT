@@ -82,7 +82,8 @@ def champions_to_buy() -> list:
         elif champion_data["level"] == 3:
             champs_to_buy.extend([champion] * 9)
         else:
-            raise ValueError("Comps.py | Champion level must be a valid level (1-3)")
+            msg = "Comps.py | Champion level must be a valid level (1-3)"
+            raise ValueError(msg)
     return champs_to_buy
 
 
