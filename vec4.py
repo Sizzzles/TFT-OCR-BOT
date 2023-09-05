@@ -54,7 +54,11 @@ class Vec4:
 
     @classmethod
     def setup_screen(
-        cls: type, x_pos: int, y_pos: int, width: int, height: int
+        cls: type,
+        x_pos: int,
+        y_pos: int,
+        width: int,
+        height: int,
     ) -> None:
         """Setup for screen coordinate offset and scale"""
         Vec4.screen_x_offset = x_pos
