@@ -104,8 +104,7 @@ if __name__ == "__main__":
 
     if os.path.isfile("cached_data/cached9.json"):
         print(
-            "Champions and comps already exist. Last modified: %s"
-            % time.ctime(os.path.getmtime("cached_data/cached9.json"))
+            f'Champions and comps already exist. Last modified: {time.ctime(os.path.getmtime("cached_data/cached9.json"))}'
         )
         while True:
             comp_input = input("Do you want to update comps? (y/n) ")

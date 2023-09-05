@@ -13,10 +13,10 @@ else:
 
 if os.path.exists(os.path.join(current_directory, tesserocr311)):
     print("\033[92mFound tesserocr installation file. Installing...\033[0m")
-    os.system("pip install " + tesserocr311)
+    os.system(f"pip install {tesserocr311}")
 elif os.path.exists(os.path.join(current_directory, tesserocr310)):
     print("\033[92mFound tesserocr installation file. Installing...\033[0m")
-    os.system("pip install " + tesserocr310)
+    os.system(f"pip install {tesserocr310}")
 else:
     print("\033[31mTesserocr installation file not found.\033[0m")
 
