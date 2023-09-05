@@ -2,6 +2,8 @@
 Contains static item & champion data
 """
 
+from __future__ import annotations
+
 COMBINED_ITEMS: set[str] = {
     "BFSword",
     "ChainVest",

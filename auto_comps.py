@@ -162,8 +162,8 @@ def __LoadLolChessComps(
                                 filter(
                                     lambda e: e["key"] == each_slot.get("champion"),
                                     query_data.get("champions"),
-                                )
-                            )
+                                ),
+                            ),
                         )["name"]
                         .replace("BelVeth", "Bel'Veth")
                         .replace("Ryze: BandleCity", "Ryze")

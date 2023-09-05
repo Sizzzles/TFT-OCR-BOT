@@ -35,7 +35,7 @@ class Game:
 
         self.loading_screen()
 
-    def callback(self, hwnd, extra) -> None:  # pylint: disable=unused-argument
+    def callback(self, hwnd: int, extra: None) -> None:
         """Function used to find the game window and get its size"""
         if "League of Legends (TM) Client" not in win32gui.GetWindowText(hwnd):
             return
@@ -117,37 +117,19 @@ class Game:
 
     def pve_round(self) -> None:
         """Handles tasks for PVE rounds"""
-        print(f"\n[PvE Round] {self.round}")
-        self.message_queue.put("CLEAR")
-        sleep(0.5)
-        if self.round in game_assets.AUGMENT_ROUNDS:
-            sleep(1)
-            self.arena.pick_augment()
-            # Can't purchase champions for a short period after choosing augment
-            sleep(2.5)
+        self.print_round_info("\n[PvE Round] ")
         if self.round == "1-3":
             sleep(1.5)
             self.arena.fix_unknown()
             # self.arena.tacticians_crown_check() #not getting any item in set9 round 1-3, skipped
 
         self.arena.fix_bench_state()
-        self.arena.spend_gold()
-        self.arena.move_champions()
-        self.arena.replace_unknown()
-        if self.arena.final_comp:
-            self.arena.final_comp_check()
-        self.arena.bench_cleanup()
+        self.pvp_round_tasks()
         self.end_round_tasks()
 
     def pvp_round(self) -> None:
         """Handles tasks for PVP rounds"""
-        print(f"\n[PvP Round] {self.round}")
-        self.message_queue.put("CLEAR")
-        sleep(0.5)
-        if self.round in game_assets.AUGMENT_ROUNDS:
-            sleep(1)
-            self.arena.pick_augment()
-            sleep(2.5)
+        self.print_round_info("\n[PvP Round] ")
         if self.round in ("2-1", "2-5"):
             self.arena.buy_xp_round()
         if self.round in game_assets.PICKUP_ROUNDS:
@@ -158,17 +140,28 @@ class Game:
         self.arena.bench_cleanup()
         if self.round in game_assets.ANVIL_ROUNDS:
             self.arena.clear_anvil()
+        self.pvp_round_tasks()
+        if self.round in game_assets.ITEM_PLACEMENT_ROUNDS:
+            sleep(1)
+            self.arena.place_items()
+        self.end_round_tasks()
+
+    def print_round_info(self, arg0: str) -> None:
+        print(f"{arg0}{self.round}")
+        self.message_queue.put("CLEAR")
+        sleep(0.5)
+        if self.round in game_assets.AUGMENT_ROUNDS:
+            sleep(1)
+            self.arena.pick_augment()
+            sleep(2.5)
+
+    def pvp_round_tasks(self) -> None:
         self.arena.spend_gold()
         self.arena.move_champions()
         self.arena.replace_unknown()
         if self.arena.final_comp:
             self.arena.final_comp_check()
         self.arena.bench_cleanup()
-
-        if self.round in game_assets.ITEM_PLACEMENT_ROUNDS:
-            sleep(1)
-            self.arena.place_items()
-        self.end_round_tasks()
 
     def end_round_tasks(self) -> None:
         """Common tasks across rounds that happen at the end"""

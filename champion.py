@@ -2,6 +2,8 @@
 Contains all information related to an individual board slot used by the bot
 """
 
+from __future__ import annotations
+
 
 class Champion:
     """Champion class that contains information about a single unit on the board or bench"""
@@ -12,7 +14,7 @@ class Champion:
         self,
         name: str,
         coords: tuple,
-        build,
+        build: list[str],
         slot: int,
         size: int,
         final_comp: bool,

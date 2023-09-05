@@ -1,10 +1,12 @@
 """
 Functions used by the Arena class to get game data
 """
+from __future__ import annotations
 
 import threading
 from difflib import SequenceMatcher
 from time import sleep
+from typing import TYPE_CHECKING
 
 import numpy as np
 import requests
@@ -14,8 +16,10 @@ import game_assets
 import mk_functions
 import ocr
 import screen_coords
-from comps import CompsManager
-from vec4 import Vec4
+
+if TYPE_CHECKING:
+    from comps import CompsManager
+    from vec4 import Vec4
 
 
 def get_level() -> int:

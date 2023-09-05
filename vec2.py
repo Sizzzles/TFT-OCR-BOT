@@ -12,7 +12,7 @@ class Vec2:
     screen_x_scale: int = 1
     screen_y_scale: int = 1
 
-    def __init__(self, x_pos, y_pos, use_screen_offset: bool = True) -> None:
+    def __init__(self, x_pos: int, y_pos: int, use_screen_offset: bool = True) -> None:
         self.x_pos = x_pos
         self.y_pos = y_pos
         self.use_screen_offset: bool = use_screen_offset
@@ -31,7 +31,13 @@ class Vec2:
         return (round(x_pos), round(y_pos))
 
     @classmethod
-    def setup_screen(cls: type, x_pos: int, y_pos: int, width: int, height: int) -> None:
+    def setup_screen(
+        cls: type,
+        x_pos: int,
+        y_pos: int,
+        width: int,
+        height: int,
+    ) -> None:
         """Setup for screen coordinate offset and scale"""
         Vec2.screen_x_offset = x_pos
         Vec2.screen_y_offset = y_pos

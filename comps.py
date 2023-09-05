@@ -4,6 +4,8 @@ Comps come from https://tftactics.gg/tierlist/team-comps
 Items are in camel case and a-Z
 """
 
+from __future__ import annotations
+
 COMP = {
     "Azir": {
         "board_position": 6,

@@ -2,6 +2,8 @@
 Handles getting into a game
 """
 
+from __future__ import annotations
+
 import json
 from time import sleep
 
@@ -138,20 +140,22 @@ def queue() -> None:
     sleep(3)
     while not check_queue(client_info):
         sleep(5)
-        create_lobby(client_info)
-        sleep(3)
-        start_queue(client_info)
+        monitor_queue(client_info)
         sleep(1)
 
     in_queue = True
     time = 0
     while in_queue:
         if time % 60 == 0:
-            create_lobby(client_info)
-            sleep(3)
-            start_queue(client_info)
+            monitor_queue(client_info)
         accept_queue(client_info)
         if check_game_status(client_info):
             in_queue = False
         sleep(1)
         time += 1
+
+
+def monitor_queue(client_info: tuple[str, str]) -> None:
+    create_lobby(client_info)
+    sleep(3)
+    start_queue(client_info)

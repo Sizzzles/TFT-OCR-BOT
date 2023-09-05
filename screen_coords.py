@@ -4,6 +4,8 @@ Screen coords for 1920x1080 screens
 (x, y, x+w, y+h) for Vec4 locations, (x, y) for Vec2 locations
 """
 
+from __future__ import annotations
+
 from vec2 import Vec2
 from vec4 import GameWindow, Vec4
 

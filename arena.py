@@ -2,7 +2,10 @@
 Handles the board / bench state inside of the game and
 other variables used by the bot to make decisions
 """
+from __future__ import annotations
+
 from time import sleep
+from typing import TYPE_CHECKING
 
 import arena_functions
 import game_assets
@@ -11,7 +14,9 @@ import mk_functions
 import ocr
 import screen_coords
 from champion import Champion
-from comps import CompsManager
+
+if TYPE_CHECKING:
+    from comps import CompsManager
 
 
 class Arena:
@@ -228,16 +233,17 @@ class Arena:
         """Sells unknown champions"""
         for index, champion in enumerate(self.bench):
             if champion == "?" or isinstance(champion, str):
-                print("  Selling unknown champion")
-                mk_functions.press_e(screen_coords.BENCH_LOC[index].get_coords())
-                self.bench[index] = None
+                self.sell_unknown_champion(index)
             elif isinstance(champion, Champion) and (
                 champion.name not in self.champs_to_buy
                 and champion.name in self.board_names
             ):
-                print("  Selling unknown champion")
-                mk_functions.press_e(screen_coords.BENCH_LOC[index].get_coords())
-                self.bench[index] = None
+                self.sell_unknown_champion(index)
+
+    def sell_unknown_champion(self, index: int) -> None:
+        print("  Selling unknown champion")
+        mk_functions.press_e(screen_coords.BENCH_LOC[index].get_coords())
+        self.bench[index] = None
 
     def clear_anvil(self) -> None:
         """Clears anvil on the bench, selects middle item"""
@@ -256,9 +262,7 @@ class Arena:
             if self.items[index] is not None:
                 self.add_item_to_champs(index)
         if "TacticiansCrown" in self.items and self.tacticians_crown:
-            print("  Tacticians Crown on bench, adding extra slot to board")
-            self.board_size -= 1
-            self.tacticians_crown = False
+            self.add_extra_board_slot()
 
     def add_item_to_champs(self, item_index: int) -> None:
         """Iterates through champions in the board and checks if the champion needs items"""
@@ -271,11 +275,7 @@ class Arena:
         item = self.items[item_index]
         if item in game_assets.FULL_ITEMS:
             if item in champ.build:
-                mk_functions.left_click(
-                    screen_coords.ITEM_POS[item_index][0].get_coords(),
-                )
-                mk_functions.left_click(champ.coords)
-                print(f"  Placed {item} on {champ.name}")
+                self.place_item_on_champion(item_index, champ, item)
                 champ.completed_items.append(item)
                 champ.build.remove(item)
                 self.items[self.items.index(item)] = None
@@ -293,11 +293,7 @@ class Arena:
                     )
                     champ.build.remove(build_item)
             if item_to_move is not None:
-                mk_functions.left_click(
-                    screen_coords.ITEM_POS[item_index][0].get_coords(),
-                )
-                mk_functions.left_click(champ.coords)
-                print(f"  Placed {item} on {champ.name}")
+                self.place_item_on_champion(item_index, champ, item)
                 self.items[self.items.index(item)] = None
         else:
             for builditem in champ.current_building:
@@ -312,6 +308,18 @@ class Arena:
                     print(f"  Placed {item} on {champ.name}")
                     print(f"  Completed {builditem[0]}")
                     return
+
+    def place_item_on_champion(
+        self,
+        item_index: int,
+        champ: Champion,
+        item: str,
+    ) -> None:
+        mk_functions.left_click(
+            screen_coords.ITEM_POS[item_index][0].get_coords(),
+        )
+        mk_functions.left_click(champ.coords)
+        print(f"  Placed {item} on {champ.name}")
 
     def fix_unknown(self) -> None:
         """Checks if the item passed in arg one is valid"""
@@ -366,13 +374,16 @@ class Arena:
         item: str = arena_functions.valid_item(item)
         try:
             if "TacticiansCrown" in item:
-                print("  Tacticians Crown on bench, adding extra slot to board")
-                self.board_size -= 1
-                self.tacticians_crown = False
+                self.add_extra_board_slot()
             else:
                 print(f"{item} is not TacticiansCrown")
         except TypeError:
             print("  Item could not be read for Tacticians Check")
+
+    def add_extra_board_slot(self) -> None:
+        print("  Tacticians Crown on bench, adding extra slot to board")
+        self.board_size -= 1
+        self.tacticians_crown = False
 
     def spend_gold(self) -> None:
         """Spends gold every round"""
@@ -423,7 +434,7 @@ class Arena:
         if arena_functions.get_gold() >= 4:
             mk_functions.buy_xp()
 
-    def load_aguments(self):
+    def load_aguments(self) -> list[str]:
         """Augments from lolchess.gg"""
         return self.comps_manager.CURRENT_COMP()[2]
 
@@ -445,17 +456,19 @@ class Arena:
                     return
 
         if self.augment_roll:
-            print("  Rolling for augment")
-            mk_functions.left_click(screen_coords.AUGMENT_ROLL_ONE.get_coords())
-            mk_functions.left_click(screen_coords.AUGMENT_ROLL_TWO.get_coords())
-            mk_functions.left_click(screen_coords.AUGMENT_ROLL_THREE.get_coords())
-            self.augment_roll = False
-            self.pick_augment()
-
+            self.roll_for_augment()
         print(
             "  [!] No priority or backup augment found, undefined behavior may occur for the rest of the round",
         )
         mk_functions.left_click(screen_coords.AUGMENT_LOC[0].get_coords())
+
+    def roll_for_augment(self) -> None:
+        print("  Rolling for augment")
+        mk_functions.left_click(screen_coords.AUGMENT_ROLL_ONE.get_coords())
+        mk_functions.left_click(screen_coords.AUGMENT_ROLL_TWO.get_coords())
+        mk_functions.left_click(screen_coords.AUGMENT_ROLL_THREE.get_coords())
+        self.augment_roll = False
+        self.pick_augment()
 
     def check_health(self) -> None:
         """Checks if current health is below 30 and conditionally activates spam roll"""
