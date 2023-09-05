@@ -7,52 +7,22 @@ Items are in camel case and a-Z
 COMP = {
     "Azir": {
         "board_position": 6,
-        "items": ["GuinsoosRageblade","HextechGunblade","StatikkShiv"],
+        "items": ["GuinsoosRageblade", "HextechGunblade", "StatikkShiv"],
         "level": 2,
-        "final_comp": True
+        "final_comp": True,
     },
     "Jarvan IV": {
         "board_position": 26,
-        "items": ["Redemption","DragonsClaw","WarmogsArmor"],
+        "items": ["Redemption", "DragonsClaw", "WarmogsArmor"],
         "level": 3,
-        "final_comp": True
+        "final_comp": True,
     },
-    "Taliyah": {
-        "board_position": 0,
-        "items": [],
-        "level": 2,
-        "final_comp": True
-    },
-    "Teemo": {
-        "board_position": 4,
-        "items": [],
-        "level": 2,
-        "final_comp": True
-    },
-    "Swain": {
-        "board_position": 25,
-        "items": [],
-        "level": 2,
-        "final_comp": True
-    },
-    "Garen": {
-        "board_position": 24,
-        "items": [],
-        "level": 2,
-        "final_comp": True
-    },
-    "Lux": {
-        "board_position": 5,
-        "items": [],
-        "level": 2,
-        "final_comp": True
-    },
-    "Nasus": {
-        "board_position": 27,
-        "items": [],
-        "level": 2,
-        "final_comp": True
-    }
+    "Taliyah": {"board_position": 0, "items": [], "level": 2, "final_comp": True},
+    "Teemo": {"board_position": 4, "items": [], "level": 2, "final_comp": True},
+    "Swain": {"board_position": 25, "items": [], "level": 2, "final_comp": True},
+    "Garen": {"board_position": 24, "items": [], "level": 2, "final_comp": True},
+    "Lux": {"board_position": 5, "items": [], "level": 2, "final_comp": True},
+    "Nasus": {"board_position": 27, "items": [], "level": 2, "final_comp": True},
 }
 
 # No logic for certain augments meaning the bot won't know what to do if they are included in here

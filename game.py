@@ -2,16 +2,18 @@
 Handles tasks that happen each game round
 """
 
-from time import sleep, perf_counter
-import random
 import multiprocessing
+import random
+from time import perf_counter, sleep
+
 import win32gui
-import settings
+
 import game_assets
 import game_functions
+import settings
 from arena import Arena
-from vec4 import Vec4
 from vec2 import Vec2
+from vec4 import Vec4
 
 
 class Game:
@@ -126,7 +128,7 @@ class Game:
         if self.round == "1-3":
             sleep(1.5)
             self.arena.fix_unknown()
-            #self.arena.tacticians_crown_check() #not getting any item in set9 round 1-3, skipped
+            # self.arena.tacticians_crown_check() #not getting any item in set9 round 1-3, skipped
 
         self.arena.fix_bench_state()
         self.arena.spend_gold()
