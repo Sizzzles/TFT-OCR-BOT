@@ -12,6 +12,7 @@ import game_functions
 import mk_functions
 import ocr
 import screen_coords
+import champion as champion_class
 from champion import Champion
 from comps import CompsManager
 
@@ -34,6 +35,7 @@ class Arena:
         self.champs_to_buy: dict = comps_manager.champions_to_buy()
         self.board_names: List[str] = []
         self.items: List[Optional[str]] = [None] * 10
+        self.augments: list = []
         self.final_comp = False
         self.level = 0
         self.augment_roll = True
@@ -150,20 +152,19 @@ class Arena:
                     print(
                         f"  The unknown champion {champ_name} exists in comps, keeping it."
                     )
-                    self.bench[index] = Champion(
-                        name=champ_name,
-                        coords=screen_coords.BENCH_LOC[index].get_coords(),
-                        build=self.comps_manager.current_comp()[1][champ_name][
-                            "items"
-                        ].copy(),
-                        slot=index,
-                        size=self.comps_manager.champions[champ_name]["Board Size"],
-                        final_comp=self.comps_manager.current_comp()[1][champ_name][
-                            "final_comp"
-                        ],
-                        trait1=self.comps_manager.champions[champ_name]["Trait1"],
-                        trait2=self.comps_manager.champions[champ_name]["Trait2"],
-                        trait3=self.comps_manager.champions[champ_name]["Trait3"],
+                    traits = self.comps_manager.champions[champ_name]
+                    trait1 = traits["Trait1"]
+                    trait2 = traits["Trait2"]
+                    trait3 = traits["Trait3"]
+                    self.bench[index] = champion_class.create_default_champion(
+                        champ_name,
+                        index,
+                        True,
+                        self.comps_manager,
+                        trait1,
+                        trait2,
+                        trait3,
+                        0,
                     )
                     self.champs_to_buy[champ_name] -= 1
                 else:
@@ -184,6 +185,8 @@ class Arena:
             name=name,
             coords=screen_coords.BENCH_LOC[slot].get_coords(),
             build=self.comps_manager.current_comp()[1][name]["items"].copy(),
+            build2=self.comps_manager.current_comp()[1][name]["recommendItems"].copy(),
+            item_slots_filled=0,
             slot=slot,
             size=self.comps_manager.champions[name]["Board Size"],
             final_comp=self.comps_manager.current_comp()[1][name]["final_comp"],
@@ -219,7 +222,7 @@ class Arena:
         champion.coords = destination
         self.board.append(champion)
         self.board_names.append(champion.name)
-        self.bench[champion.index] = None
+        self.bench[self.bench.index(champion)] = None
         champion.index = self.comps_manager.current_comp()[1][champion.name][
             "board_position"
         ]
@@ -340,236 +343,625 @@ class Arena:
             mk_functions.left_click(screen_coords.BUY_LOC[2].get_coords())
         sleep(1)
 
+    def get_random_final_comp_champ_on_board_with_no_build(self) -> Champion | None:
+        print("    Looking for a random champ that we don't want to build items.")
+        for champ in self.board:
+            if isinstance(champ, Champion):
+                if len(champ.build) == 0:
+                    print(
+                        f"      {champ.name} is a unit that we haven't specified items for."
+                    )
+                    return champ
+        return None
+
     def place_items(self) -> None:
-        """Iterates through items and tries to add them to champion."""
+        """Loops through the champs first so that we can add multiple items to one champ first,
+        before moving onto the next champ."""
+        print("  Placing items on champs")
         self.items = arena_functions.get_items()
         print(f"  Items: {list(filter(None.__ne__, self.items))}")
-        for index, _ in enumerate(self.items):
-            if self.items[index] is not None:
-                if self.items[index] == "TacticiansCrown":
-                    self.bench_tacticians_crown = True
-                    if not self.tacticians_crown:
-                        print("  Tacticians Crown on bench, adding extra slot to board")
-                        self.board_size -= 1
-                        self.tacticians_crown = True
-                    self.move_champions()
-                    self.add_item_to_champs(index)
-                else:
-                    if self.items[index] in [
-                        "ChampionDuplicator",
-                        "LesserChampionDuplicator",
-                    ]:
-                        self.use_duplicator_items(index, self.items[index])
-                    elif "Emblem" in self.items[index]:
-                        self.use_trait_emblem(index)
-                    else:
-                        self.add_item_to_champs(index)
-
-    def use_trait_emblem(self, item_index: int) -> None:
-        """Handle the placement of trait emblem items."""
-        trait_to_check = self.items[item_index].replace("Emblem", "")
-        for champ in self.board:
+        champs_on_board_sorted_by_items: list[Champion] = (
+            self.get_list_of_champs_on_board_in_order_of_amount_of_total_items()
+        )
+        for champ in champs_on_board_sorted_by_items:
             if isinstance(champ, Champion):
-                if not champ.check_trait(trait_to_check):
-                    mk_functions.left_click(
-                        screen_coords.ITEM_POS[item_index][0].get_coords()
+                # try to give completed items first
+                # for loop like this because a champ can have 3 complete/non-component items
+                print(
+                    f"    Champ: {champ.name}, # of Item Slots Filled: {champ.item_slots_filled}, Items: {champ.items}"
+                )
+                combined_two_items = False
+                for _ in range(champ.item_slots_filled, 6):
+                    # can't give completed items if there aren't two slots or more available
+                    if champ.item_slots_filled < 5:
+                        self.add_ornn_item_to_champ(champ)
+                        self.add_radiant_version_of_items_to_champ(champ)
+                        self.add_completed_item_to_champ(champ)
+                        self.add_support_item_to_champ(champ)
+                        self.add_trait_item_to_champ(champ)
+                        self.add_tacticians_crown_to_champ(champ)
+                        self.check_for_gloves()
+                        self.check_if_we_should_spam_sparring_gloves()
+                        self.add_random_completed_item_to_champ(champ)
+                    if champ.item_slots_filled % 2 == 0:
+                        combined_two_items = self.add_any_item_from_combining_two_component_items_on_champ(
+                            champ
+                        )
+                        if self.can_give_champ_a_completed_secondary_item(champ):
+                            combined_two_items = (
+                                combined_two_items
+                                or self.add_any_secondary_item_from_combining_two_component_items_on_champ(
+                                    champ
+                                )
+                            )
+                if not combined_two_items:
+                    print(f"            Unable to complete an item for {champ.name}.")
+                # Items removers can be used any number of times on one unit.
+                self.throwaway_reforger_item(champ)
+                self.throwaway_magnetic_remover_item(champ)
+                self.use_champion_duplicators(champ)
+                self.use_masterwork_upgrade(champ)
+
+    def add_one_item_to_champ(
+        self, champ: Champion, items_bench_index: int, consumable: bool = False
+    ):
+        """Move the item from its location on the board to the champ.
+        Prints out the name of the item and the champ it was placed on.
+        Adds it to the champs list of items it has.
+        Removes the instance of the item from the board's list of items."""
+        item = self.items[items_bench_index]
+        arena_functions.move_item(
+            screen_coords.ITEM_POS[items_bench_index][0].get_coords(), champ.coords
+        )
+        arena_functions.print_item_placed_on_champ(item, champ)
+        if not consumable:
+            champ.item_slots_filled += 1
+            champ.items.append(item)
+        self.items[items_bench_index] = None
+
+    def add_completed_item_to_champ(self, champ: Champion) -> None:
+        """If we have completed items waiting on the bench,
+        that are the unit's 'best_in_slot' (BIS items) give them to the unit."""
+        for _, completed_item in enumerate(champ.build):
+            if completed_item in self.items:
+                self.add_one_item_to_champ(champ, self.items.index(completed_item))
+                champ.build.remove(completed_item)
+                champ.non_component_items.append(completed_item)
+                champ.item_slots_filled += 1
+        return
+
+    def add_random_completed_item_to_champ(self, champ: Champion) -> None:
+        """If the champion doesn't have any items in champ.build,
+        add the first available completed item from game_assets.FORCED_ITEMS."""
+        for full_item in game_assets.FORCED_ITEMS:
+            if full_item in self.items and not champ.build:
+                self.add_one_item_to_champ(champ, self.items.index(full_item))
+                champ.non_component_items.append(full_item)
+                champ.item_slots_filled += 1
+        return
+
+    def add_radiant_version_of_items_to_champ(self, champ: Champion) -> None:
+        """If we have radiant items waiting on the bench,
+        that are a better version of the champ's completed items it WANTS to build
+        give them to the champ."""
+        for radiant_item, completed_item in game_assets.RADIANT_ITEMS_DICT.items():
+            if completed_item in champ.build and radiant_item in self.items:
+                self.add_one_item_to_champ(champ, self.items.index(radiant_item))
+                champ.build.remove(completed_item)
+                champ.non_component_items.append(radiant_item)
+        return
+
+    def add_ornn_item_to_champ(self, champ: Champion) -> None:
+        """If there is an Ornn item on the bench that this champ wants, give it to 'em."""
+        for ornn_item in game_assets.ARTIFACT_ITEMS:
+            if ornn_item in self.items:
+                if (
+                    ornn_item == "BlacksmithsGloves"
+                    and not champ.build
+                    and champ.item_slots_filled <= 0
+                ):
+                    self.add_one_item_to_champ(champ, self.items.index(ornn_item))
+                    champ.non_component_items.append(ornn_item)
+                    champ.item_slots_filled += (
+                        5  # Increment by 5 to make it a total of 6
                     )
-                    mk_functions.left_click(champ.coords)
-                    print(f"  Placed {self.items[item_index]} on {champ.name}")
-                    champ.completed_items.append(self.items[item_index])
-                    self.items[item_index] = None
-                    return
+                elif ornn_item in champ.build:
+                    self.add_one_item_to_champ(champ, self.items.index(ornn_item))
+                    champ.build.remove(ornn_item)
+                    champ.non_component_items.append(ornn_item)
+                    champ.item_slots_filled += 1
+                elif not champ.build:
+                    champ.build = [ornn_item]
+                    self.add_one_item_to_champ(champ, self.items.index(ornn_item))
+                    champ.build.remove(ornn_item)
+                    champ.non_component_items.append(ornn_item)
+                    champ.item_slots_filled += 1
+        return
 
-    def use_duplicator_items(self, item_index: int, item: str) -> None:
-        """Handle the placement of champion duplicator items."""
-        if item == "ChampionDuplicator":
-            max_cost = 5
-        elif item == "LesserChampionDuplicator":
-            max_cost = 3
-        else:
-            return  # Invalid item
+    def add_support_item_to_champ(self, champ: Champion) -> None:
+        """If there is a Support item on the bench that this champ wants, give it to 'em."""
+        for support_item in game_assets.SUPPORT_ITEMS:
+            if support_item in self.items:
+                if support_item in champ.build:
+                    self.add_one_item_to_champ(champ, self.items.index(support_item))
+                    champ.build.remove(support_item)
+                    champ.non_component_items.append(support_item)
+                    champ.item_slots_filled += 1
+                elif not champ.build:
+                    champ.build = [support_item]
+                    self.add_one_item_to_champ(champ, self.items.index(support_item))
+                    champ.build.remove(support_item)
+                    champ.non_component_items.append(support_item)
+                    champ.item_slots_filled += 1
+        return
 
-        empty_slot = arena_functions.empty_slot()
+    def add_trait_item_to_champ(self, champ: Champion) -> None:
+        """If there is a trait emblem item on the bench that this champ wants and doesn't have, give it to 'em."""
+        for trait_item in (
+            game_assets.CRAFTABLE_EMBLEM_ITEMS | game_assets.ELUSIVE_EMBLEM_ITEMS
+        ):
+            if trait_item in self.items:
+                # Check if the champion already has the trait associated with the trait emblem item
+                if not champ.check_trait(trait_item):
+                    if trait_item in champ.build:
+                        self.add_one_item_to_champ(champ, self.items.index(trait_item))
+                        champ.build.remove(trait_item)
+                        champ.non_component_items.append(trait_item)
+                        champ.item_slots_filled += 1
+                    elif not champ.build:
+                        self.add_one_item_to_champ(champ, self.items.index(trait_item))
+                        champ.non_component_items.append(trait_item)
+                        champ.item_slots_filled += 1
+        return
 
-        if empty_slot != -1:
-            if "Kayle" in self.champs_to_buy:
-                del self.champs_to_buy["Kayle"]
-            champs_to_buy_list = [
-                champion for champion, count in self.champs_to_buy.items() if count >= 1
-            ]
-            sorted_champions = sorted(
-                champs_to_buy_list,
-                key=self.comps_manager.champion_gold_cost,
-                reverse=True,
-            )
-            for champ_name in sorted_champions:
-                for champ in self.board + self.bench:
-                    if champ and champ.name == champ_name:  # Check if champ is not None
-                        gold_cost = self.comps_manager.champion_gold_cost(champ_name)
-                        if 1 <= gold_cost <= max_cost:
-                            self.add_duplicator_to_champ(item_index, champ)
-                            return
-        else:
-            print("No empty slot on the bench, unable to place item.")
+    def add_tacticians_crown_to_champ(self, champ: Champion) -> None:
+        """If there is a Tactician's Crown on the bench then change board size and give to champ."""
+        if "TacticiansCrown" in self.items:
+            self.bench_tacticians_crown = True
+            if not self.tacticians_crown:
+                print("  Tacticians Crown on bench, adding extra slot to board")
+                self.board_size -= 1
+                self.tacticians_crown = True
+            self.move_champions()
+            if not champ.build and champ.item_slots_filled <= 0:
+                self.add_one_item_to_champ(champ, self.items.index("TacticiansCrown"))
+                champ.non_component_items.append("TacticiansCrown")
+                champ.item_slots_filled += 1
 
-    def add_duplicator_to_champ(self, item_index: int, champ: Champion) -> None:
-        """Applies the champion duplicator item to the champion."""
-        item = self.items[item_index]
-        mk_functions.left_click(screen_coords.ITEM_POS[item_index][0].get_coords())
-        mk_functions.left_click(champ.coords)
-        print(f"  Duplicated {champ.name} with {item}")
-        self.items[self.items.index(item)] = None
+    def check_for_gloves(self) -> bool:
+        """Check if Lucky Gloves should be made, prioritize adding glove items to a champion."""
+        gloves = [
+            "ThiefsGloves",
+            "BlacksmithsGloves",
+            "RascalsGloves",
+            "AccomplicesGloves",
+        ]
 
-    def add_item_to_champs(self, item_index: int) -> None:
-        """Iterates through champions in the board and checks if the champion needs items."""
-        for champ in self.board:
-            if isinstance(champ, Champion):
-                if self.items[item_index] is not None:
-                    if champ.does_need_items():
-                        self.add_item_to_champ(item_index, champ)
-                    if len(champ.build) == 0:
-                        if champ.has_available_item_slots():
-                            item = self.items[item_index]
-                            gloves = [
-                                "ThiefsGloves",
-                                "BlacksmithsGloves",
-                                "RascalsGloves",
-                                "AccomplicesGloves",
-                            ]
-                            if (
-                                self.other_instances_dont_need_item(item)
-                                and (
-                                    (item not in gloves)
-                                    or (
-                                        len(champ.completed_items) == 0
-                                        and len(champ.build) == 0
-                                        and len(champ.current_building) == 0
-                                    )
-                                )
-                                and item
-                                in set(game_assets.CRAFTABLE_ITEMS_DICT.values()).union(
-                                    game_assets.RADIANT_ITEMS_DICT.values(),
-                                    game_assets.FORCED_ITEMS,
-                                )
-                            ):
-                                mk_functions.left_click(
-                                    screen_coords.ITEM_POS[item_index][0].get_coords()
-                                )
-                                mk_functions.left_click(champ.coords)
-                                # Handle resetting Tacticians Crown flags once placed on random champ
-                                if (
-                                    item == "TacticiansCrown"
-                                    and self.bench_tacticians_crown
-                                ):
-                                    self.bench_tacticians_crown = False
-                                    self.tacticians_crown = False
-                                print(
-                                    f"  Placed {item} on {champ.name} to free up space"
-                                )
-                                if item in gloves and champ.max_item_slots == 3:
-                                    champ.completed_items = [
-                                        item
-                                    ] * 3  # Set to 3 completed_items
-                                    # print(
-                                    #    f"  {champ.name} completed items: {champ.completed_items}"
-                                    #    f"  {champ.name} item slots number: {champ.max_item_slots}"
-                                    # )
-                                champ.completed_items.append(item)
-                                self.items[self.items.index(item)] = None
-                                # print(
-                                #    f"  {champ.name} completed items: {champ.completed_items}"
-                                # )
+        # Check if any glove items are available
+        glove_item = next((glove for glove in gloves if glove in self.items), None)
 
-    def item_needed_on_champions(self, champions, item):
-        """Checks if the item is needed on any champions, accounting for items already placed."""
-        for champ in champions:
-            if champ is not None and getattr(champ, "build", None) is not None:
-                if item in champ.build and item not in champ.completed_items:
+        if glove_item:
+            # If glove item is available, add it to a champion
+            no_build_champ = self.get_random_final_comp_champ_on_board_with_no_build()
+            if no_build_champ is not None and no_build_champ.item_slots_filled <= 0:
+                if self.add_gloves_to_champ(no_build_champ, glove_item):
                     return True
+
+        # Check if Lucky Gloves augment is present and add them if necessary
+        if "Lucky Gloves" in self.augments:
+            print("We have Lucky Gloves!")
+            no_build_champ = self.get_random_final_comp_champ_on_board_with_no_build()
+            if no_build_champ is not None and no_build_champ.item_slots_filled <=0:
+                if self.add_gloves_to_champ(no_build_champ):
+                    return True
+
         return False
 
-    def other_instances_dont_need_item(self, item):
-        """Check if any other instance (board, bench, champs to buy) needs the item,
-        considering items already placed and adjusting for dynamic needs."""
-        item_needed_on_board = self.item_needed_on_champions(self.board, item)
-        item_needed_on_bench = self.item_needed_on_champions(self.bench, item)
+    def check_if_we_should_spam_sparring_gloves(self) -> bool:
+        """Checks if our health is at 30 or less and then calls the function to spam thief's gloves."""
+        health: int = arena_functions.get_health()
+        if health <= 30:
+            for champ in self.board:
+                if isinstance(champ, Champion):
+                    if len(champ.build) <= 0 and champ.item_slots_filled <= 0:
+                        if self.add_gloves_to_champ(champ):
+                            return True
+        return False
 
-        champions_in_comp = self.comps_manager.current_comp()[1].items()
+    def add_gloves_to_champ(self, champ: Champion, glove_item: str = None) -> bool:
+        """Makes Thiefs Gloves if possible and gives them to a champ with no items."""
+        # print("    Attempting to add Thief's Gloves to a random itemless champ.")
+        gloves_index_1 = -1
+        gloves_index_2 = -1
 
-        # Check if the item is needed by any champion in the comp who is not on the board or bench
-        item_needed_on_champions_to_buy = any(
-            item in data.get("items", [])
-            and item not in data.get("completed_items", [])
-            for _, data in champions_in_comp
-        )
-
-        # Determine if the item is not needed across all instances.
-        return not (
-            item_needed_on_board
-            or item_needed_on_bench
-            or item_needed_on_champions_to_buy
-        )
-
-    def add_item_to_champ(self, item_index: int, champ: Champion) -> None:
-        """Takes item index and champ and applies the item"""
-        item = self.items[item_index]
-
-        if item in game_assets.CRAFTABLE_ITEMS_DICT:
-            if item in champ.build:
-                mk_functions.left_click(
-                    screen_coords.ITEM_POS[item_index][0].get_coords()
+        if glove_item:
+            # Give the specified glove item to the champion
+            if glove_item in self.items:
+                gloves_index = self.items.index(glove_item)
+                arena_functions.move_item(
+                    screen_coords.ITEM_POS[gloves_index][0].get_coords(), champ.coords
                 )
-                mk_functions.left_click(champ.coords)
-                print(f"  Placed {item} on {champ.name}")
-                champ.completed_items.append(item)
-                champ.build.remove(item)
-                self.items[self.items.index(item)] = None
-                # print(
-                #    f"1  {champ.name} Completed Items: {champ.completed_items}\n"
-                #    f"1  {champ.name} Build: {champ.build}"
-                # )
-        elif len(champ.current_building) == 0:
-            item_to_move = None
-            for build_item in champ.build:
-                build_item_components = list(
-                    game_assets.CRAFTABLE_ITEMS_DICT.get(build_item, [])
-                )
-                if item in build_item_components:
-                    item_to_move = item
-                    build_item_components.remove(item_to_move)
-                    champ.current_building.append(
-                        (build_item, build_item_components[0])
+                print(f"      Placed {self.items[gloves_index]} on {champ.name}")
+                self.items[gloves_index] = None
+                champ.item_slots_filled += 6
+                return True
+            else:
+                print(f"    {glove_item} not found in inventory.")
+                return False
+
+        for index, _ in enumerate(self.items):
+            if self.items[index] == "SparringGloves":
+                if gloves_index_1 == -1:
+                    print("    Found Sparring Gloves #1 for a Thief's Gloves.")
+                    gloves_index_1 = index
+                if gloves_index_1 != -1 and gloves_index_2 == -1:
+                    print("    Found Sparring Gloves #2 for a Thief's Gloves.")
+                    gloves_index_2 = index
+                    break
+        if (
+            gloves_index_1 != -1
+            and gloves_index_2 != -1
+            and gloves_index_1 != gloves_index_2
+        ):
+            print("    We have 2 Sparring Gloves to make Thief's Gloves with!")
+            arena_functions.move_item(
+                screen_coords.ITEM_POS[gloves_index_1][0].get_coords(), champ.coords
+            )
+            print(f"      Placed {self.items[gloves_index_1]} on {champ.name}")
+            self.items[gloves_index_1] = None
+            arena_functions.move_item(
+                screen_coords.ITEM_POS[gloves_index_2][0].get_coords(), champ.coords
+            )
+            print(f"      Placed {self.items[gloves_index_2]} on {champ.name}")
+            self.items[gloves_index_2] = None
+            champ.item_slots_filled += 6
+            return True
+        return False
+
+    def add_consumable_item_to_champ(self, champ: Champion, items_bench_index: int):
+        """Simply calls the self.add_one_item_to_champ() function with a consumable value of True."""
+        self.add_one_item_to_champ(champ, items_bench_index, True)
+
+    def throwaway_reforger_item(self, champ: Champion) -> bool:
+        """Simply tries to use a Reforger on a champ with 1 component item.
+        Returns True if we used it."""
+        if "Reforger" in self.items:
+            if champ.item_slots_filled == 1:
+                self.add_consumable_item_to_champ(champ, self.items.index("Reforger"))
+                champ.item_slots_filled -= 1
+                for item in champ.current_building:
+                    champ.current_building.remove(item)
+                    print(
+                        f"    {champ.name} is no longer trying to build {champ.current_building} due to a Reforger."
                     )
-                    champ.build.remove(build_item)
-            if item_to_move is not None:
-                mk_functions.left_click(
-                    screen_coords.ITEM_POS[item_index][0].get_coords()
+                if champ.component_item != "":
+                    print(
+                        f"    A Reforger removed {champ.component_item} from {champ.name} and changed it into a new item."
+                    )
+                else:
+                    print(
+                        "    [!] We removed a component item from a champ, but we didn't know what component it was!"
+                    )
+                return True
+            else:
+                print(
+                    "  Tried to throw away a Reforger on a nearly-itemless champ, "
+                    "but couldn't find a nearly itemless champ."
                 )
-                mk_functions.left_click(champ.coords)
-                print(f"  Placed {item} on {champ.name}")
-                self.items[self.items.index(item)] = None
-                # print(
-                #    f"2  {champ.name} Currently Building: {champ.current_building[0][0]}\n"
-                #    f"2  {champ.name} Completed Items: {champ.completed_items}\n"
-                #    f"2  {champ.name} Build: {champ.build}"
-                # )
+                return False
+        return False
+
+    def throwaway_magnetic_remover_item(self, champ: Champion) -> bool:
+        """Simply tries to use a Magnetic Remover on a champ with 1 component items.
+        Returns True if we used it."""
+        if "MagneticRemover" in self.items:
+            if champ.item_slots_filled == 1:
+                self.add_consumable_item_to_champ(
+                    champ, self.items.index("MagneticRemover")
+                )
+                champ.item_slots_filled -= 1
+                # Removes the tuple of (completed_item, needed_component_item) that the champ had.
+                for item in champ.current_building:
+                    champ.current_building.remove(item)
+                    print(
+                        f"    {champ.name} is no longer trying to build {champ.current_building} due to a Magnetic Remover."
+                    )
+                if champ.component_item != "":
+                    print(
+                        f"    A Magnetic Remover removed {champ.component_item} from {champ.name}."
+                    )
+                else:
+                    print(
+                        "    [!] We removed a component item from a champ, but we didn't know what component it was!"
+                    )
+                return True
+            else:
+                print(
+                    "  Tried to throw away a Magnetic Remover on a nearly-itemless champ, "
+                    "but couldn't find a nearly itemless champ."
+                )
+                return False
+        return False
+
+    def is_possible_to_combine_two_components_into_given_item(
+        self, champ: Champion, complete_item: str
+    ) -> bool:
+        """Assumes that the complete item in the champ's build, exists as a CRAFTABLE item.
+        Returns a boolean value that represent if BOTH component items for a complete item exist in self.items.
+        """
+        if complete_item not in champ.build:
+            # print(f"        {complete_item} is not in  {champ.name}'s build.")
+            return False
+        if complete_item not in game_assets.CRAFTABLE_ITEMS_DICT:
+            print(f"    You have misspelled {complete_item}.")
+            return False
+        copy_of_owned_items = self.items.copy()
+        for item in game_assets.CRAFTABLE_ITEMS_DICT[complete_item]:
+            if item not in copy_of_owned_items:
+                # print(f"        We are missing a {item} to build the {complete_item}.")
+                return False
+            else:  # make sure for items that need duplicate component items, this doesn't count one component twice
+                # print(f"        Removing the {item} from the copy of owned items, because we don't want to count items twice.")
+                copy_of_owned_items.remove(item)
+        return True
+
+    def get_item_that_is_possible_to_combine_from_components(
+        self, champ: Champion
+    ) -> str | None:
+        """Searches through the champ's BIS items it wants to build and returns the complete BIS item
+        if it can be crafted from component items currently on the bench."""
+        for complete_item in champ.build:
+            # print(f"      For {complete_item} in {champ.name}'s build.")
+            if self.is_possible_to_combine_two_components_into_given_item(
+                champ, complete_item
+            ):
+                # print(f"        It is possible to create the {complete_item} for {champ}.")
+                return complete_item
+            else:
+                # print(f"        It is not possible to craft the {complete_item} for {champ}.")
+                continue
+        return None
+
+    def add_any_item_from_combining_two_component_items_on_champ(
+        self, champ: Champion
+    ) -> bool:
+        """Assumes that the champ has no component items on them.
+        Gets any Best In Slot (BIS) craftable item from the champ
+        that we have determined we have both components for.
+        Then adds both components to the champ to create a completed item."""
+        complete_item = self.get_item_that_is_possible_to_combine_from_components(champ)
+        if complete_item is not None:
+            # print(f"      Creating complete item: {complete_item} for {champ.name}.")
+            component_one = game_assets.CRAFTABLE_ITEMS_DICT[complete_item][0]
+            component_two = game_assets.CRAFTABLE_ITEMS_DICT[complete_item][1]
+            self.add_one_item_to_champ(champ, self.items.index(component_one))
+            self.add_one_item_to_champ(champ, self.items.index(component_two))
+            champ.non_component_items.append(complete_item)
+            champ.build.remove(complete_item)
+            # Just make sure we don't give them the same item twice.
+            if complete_item in champ.secondary_items:
+                champ.secondary_items.remove(complete_item)
+            return True
+        return False
+
+    # TODO: combine this with the bis functions into one function that takes in the list of items to check
+    def is_possible_to_combine_two_components_into_given_secondary_item(
+        self, champ: Champion, complete_item: str
+    ) -> bool:
+        """Assumes that the complete item in the champ's build, exists as a CRAFTABLE item.
+        Returns a boolean value that represent if BOTH component items for a complete item exist in self.items.
+        """
+        if complete_item not in champ.secondary_items:
+            return False
+        copy_of_owned_items = self.items.copy()
+        for item in game_assets.CRAFTABLE_ITEMS_DICT[complete_item]:
+            if item not in copy_of_owned_items:
+                return False
+            else:  # makes sure for items that need duplicate component items, this doesn't count one component twice
+                copy_of_owned_items.remove(item)
+        return True
+
+    # TODO: combine this with the bis functions into one function that takes in the list of items to check
+    def get_secondary_item_that_is_possible_to_combine_from_components(
+        self, champ: Champion
+    ) -> str | None:
+        """Searches through the champ's BIS items it wants to build and returns the complete BIS item
+        if it can be crafted from component items currently on the bench."""
+        for complete_item in champ.secondary_items:
+            if self.is_possible_to_combine_two_components_into_given_secondary_item(
+                champ, complete_item
+            ):
+                return complete_item
+            else:
+                return None
+        return
+
+    # TODO: combine this with the bis functions into one function that takes in the list of items to check
+    def add_any_secondary_item_from_combining_two_component_items_on_champ(
+        self, champ: Champion
+    ) -> bool:
+        """Assumes that the champ has no component items on them.
+        Gets any Best In Slot (BIS) craftable item from the champ
+        that we have determined we have both components for.
+        Then adds both components to the champ to create a completed item."""
+        complete_item = (
+            self.get_secondary_item_that_is_possible_to_combine_from_components(champ)
+        )
+        if complete_item is not None:
+            print(
+                f"      Creating complete secondary item: {complete_item} for {champ.name}."
+            )
+            component_one = game_assets.CRAFTABLE_ITEMS_DICT[complete_item][0]
+            component_two = game_assets.CRAFTABLE_ITEMS_DICT[complete_item][1]
+            self.add_one_item_to_champ(champ, self.items.index(component_one))
+            self.add_one_item_to_champ(champ, self.items.index(component_two))
+            champ.non_component_items.append(complete_item)
+            champ.secondary_items.remove(complete_item)
+            # Just make sure we don't give them the same item twice.
+            if complete_item in champ.build:
+                champ.build.remove(complete_item)
+            return True
+        return False
+
+    def get_list_of_champs_on_board_in_order_of_amount_of_total_items(
+        self,
+    ) -> list[Champion]:
+        """Returns a list of Champion objects that are on the board,
+        ordered by how many items they have listed in BIS, in descending order.
+        Extremely unlikely, but the list might return as empty."""
+        champs_on_board_dict = {}
+        for champ in self.board:
+            if isinstance(champ, Champion):
+                if champ.name in self.comps_manager.current_comp()[1]:
+                    champ_in_comp = self.comps_manager.current_comp()[1][champ.name]
+                    champs_on_board_dict[champ] = len(champ_in_comp["items"])
+        # using just Champion.build would mean that when a unit builds an item, they receive less priority
+        return sorted(champs_on_board_dict, key=champs_on_board_dict.get, reverse=True)
+
+    def get_index_of_one_lesser_champion_duplicators_on_bench(self) -> int | None:
+        if "LesserChampionDuplicator" in self.items:
+            return self.items.index("LesserChampionDuplicator")
         else:
-            for build_item in champ.current_building:
-                if item == build_item[1]:
-                    mk_functions.left_click(
-                        screen_coords.ITEM_POS[item_index][0].get_coords()
-                    )
-                    mk_functions.left_click(champ.coords)
-                    champ.completed_items.append(build_item[0])
-                    champ.current_building.clear()
-                    self.items[self.items.index(item)] = None
-                    print(f"  Placed {item} on {champ.name}")
-                    print(f"  Completed {build_item[0]} on {champ.name}")
-                    # print(
-                    #    f"3  {champ.name} Completed Items: {build_item[0]}\n"
-                    #    f"3  {champ.name} Build: {champ.build}"
-                    # )
-                    return
+            return None
+
+    def get_index_of_one_champion_duplicators_on_bench(self) -> int | None:
+        if "ChampionDuplicator" in self.items:
+            return self.items.index("ChampionDuplicator")
+        else:
+            return None
+
+    def use_champion_duplicators(self, champ: Champion) -> None:
+        """Uses Champion Duplicators on champs.
+        Makes a list of all champs that are on the board and that still need to be bought to be raised
+        to the desire star level. Sorts that list of champs, by the amount of items they need, in descending order
+        so that we duplicate most important champions first.
+        Will only use non-lesser champion duplicators on champs that cost 4 or 5."""
+        # print("    Looking for champion duplicators.")
+        lesser_duplicator_index = (
+            self.get_index_of_one_lesser_champion_duplicators_on_bench()
+        )
+        normal_duplicator_index = self.get_index_of_one_champion_duplicators_on_bench()
+        # Exit the function sooner if we don't have any champion duplicators
+        if lesser_duplicator_index is None and normal_duplicator_index is None:
+            return
+        print("    We have champion duplicators to use.")
+        if (
+            champ.name in self.champs_to_buy
+            and champ.name in self.comps_manager.champions
+        ):
+            unit_dict = self.comps_manager.champions[champ.name]
+            # print(f"      Champ Dict: {champ_dict}")
+            cost = unit_dict["Gold"]
+            # print(f"        Cost: {cost}")
+            if cost <= 3 and lesser_duplicator_index is not None:
+                self.add_one_item_to_champ(champ, lesser_duplicator_index, True)
+            elif cost > 3 and normal_duplicator_index is not None:
+                self.add_one_item_to_champ(champ, normal_duplicator_index, True)
+        return
+
+    def use_masterwork_upgrade(self, champ: Champion) -> None:
+        """Uses a Masterwork Upgrade on a champ.
+        Uses it on the first champ with the most BIS items, since the item upgrades craftable completed items
+        to Radiant versions. This will fail if the champ isn't holding any completed items.
+        This function doesn't select the item from the Armory shop."""
+        # print("    Try using Masterwork Upgrade.")
+        if "MasterworkUpgrade" not in self.items:
+            return
+        if len(champ.non_component_items) > 0:
+            self.add_one_item_to_champ(champ, self.items.index("MasterworkUpgrade"))
+
+    # TODO: Clean this up and break down into smaller functions.
+    # TODO: Possibly should change it to give the rest of the component items before giving emblem and support items.
+    def add_random_items_on_strongest_champs_at_one_loss_left(self):
+        """This function tries to add all the leftover items on the board before the bot loses the game.
+        It focuses on placing items onto the most important champs, as defined by how many BIS items they have in their comp file.
+        It will place the strongest items first (e.g. Ornn Artifact Items and Radiant Items).
+        Then place the normal completed items, because it's most likely those will help the damage-dealing carries the most.
+        Then emblem items and support items. Hopefully by the time we are placing those items
+        we are giving them to non-carries that will buff the carries.
+        Then we take the remaining component items and try to give them too.
+        """
+        if arena_functions.get_health() > 36:
+            return
+        print("  Randomly adding items to our carry champs since we are about to lose.")
+        champs_on_board_sorted_by_items: list[Champion] = (
+            self.get_list_of_champs_on_board_in_order_of_amount_of_total_items()
+        )
+        for champ in champs_on_board_sorted_by_items:
+            if champ.item_slots_filled >= 6:
+                print(
+                    f"    Champ: {champ.name} has an item_slots_filled value of {champ.item_slots_filled}. Continuing..."
+                )
+                continue
+            # Give non-component items first.
+            if champ.item_slots_filled % 2 == 0:
+                print(
+                    "    END GAME: Looking to add Ornn, Radiant, Completed, Emblem, Support Items."
+                )
+                # Try to place Ornn and Radiant items first
+                items_to_place = game_assets.ARTIFACT_ITEMS | game_assets.RADIANT_ITEMS
+                for item in items_to_place:
+                    if item == "BlacksmithsGloves" and item in self.items and champ.item_slots_filled <= 0:
+                        self.add_one_item_to_champ(champ, self.items.index(item))
+                        champ.non_component_items.append(item)
+                        champ.item_slots_filled += 5
+                    elif item in self.items and champ.item_slots_filled < 6:
+                        self.add_one_item_to_champ(champ, self.items.index(item))
+                        champ.non_component_items.append(item)
+                        if item in champ.build:
+                            champ.build.remove(item)
+                        if item in champ.secondary_items:
+                            champ.secondary_items.remove(item)
+                        champ.item_slots_filled += 1
+                # Then try to place completed items
+                items_to_place = game_assets.COMBINED_ITEMS
+                for item in items_to_place:
+                    if item == "ThiefsGloves" and item in self.items and champ.item_slots_filled <= 0:
+                        self.add_one_item_to_champ(champ, self.items.index(item))
+                        champ.non_component_items.append(item)
+                        champ.item_slots_filled += 5
+                    if item in self.items and champ.item_slots_filled < 6:
+                        self.add_one_item_to_champ(champ, self.items.index(item))
+                        champ.non_component_items.append(item)
+                        if item in champ.build:
+                            champ.build.remove(item)
+                        if item in champ.secondary_items:
+                            champ.secondary_items.remove(item)
+                        champ.item_slots_filled += 2
+                # Place emblem items
+                items_to_place = game_assets.CRAFTABLE_EMBLEM_ITEMS | game_assets.ELUSIVE_EMBLEM_ITEMS
+                for item in items_to_place:
+                    if item in self.items and champ.item_slots_filled < 6:
+                        if not champ.check_trait(item):
+                            self.add_one_item_to_champ(champ, self.items.index(item))
+                            champ.non_component_items.append(item)
+                            if item in champ.build:
+                                champ.build.remove(item)
+                            champ.item_slots_filled += 1
+                # Place support items
+                for item in game_assets.SUPPORT_ITEMS:
+                    if item in self.items and champ.item_slots_filled < 6:
+                        self.add_one_item_to_champ(champ, self.items.index(item))
+                        champ.non_component_items.append(item)
+                        if item in champ.build:
+                            champ.build.remove(item)
+                        champ.item_slots_filled += 1
+            # Place component items
+            items_to_place = game_assets.COMPONENT_ITEMS
+            for item in items_to_place:
+                if item in self.items:
+                    print("    END GAME: Looking to add component items.")
+                    if champ.item_slots_filled % 2 == 0:
+                        champ.component_item = item
+                    else:
+                        for current_building in champ.current_building:
+                            print(f"    The champ {champ.name} was trying to build a {current_building}")
+                            print(f"      But we gave them a {item} component item instead.")
+                            champ.current_building.remove(champ.current_building)
+                        champ.component_item = ""
+                        if len(champ.items) != 0:
+                            champ.items.pop()
+                    self.add_one_item_to_champ(champ, self.items.index(item))
 
     def fix_unknown(self) -> None:
         """Checks if the item passed in arg one is valid"""
@@ -773,7 +1165,13 @@ class Arena:
                     return
             mk_functions.left_click(screen_coords.AUGMENT_LOC[0].get_coords())
 
-    def check_health(self) -> None:
+    def can_give_champ_a_completed_secondary_item(self, unit: Champion):
+        return unit.item_slots_filled < 5 and (
+            arena_functions.get_health() <= 50
+            or len([item for item in self.items if item is not None]) == 10
+        )
+
+    def check_health(self) -> int:
         """Check the current health and activate spam roll if health is 30 or below"""
         health: int = arena_functions.get_health()
         if health > 0:
@@ -783,6 +1181,7 @@ class Arena:
                 self.spam_roll = True
         else:
             print("  Health check failed")
+        return health
 
     def get_label(self) -> None:
         """Gets labels used to display champion name UI on window"""

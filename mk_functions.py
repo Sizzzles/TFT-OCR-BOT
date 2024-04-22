@@ -41,6 +41,10 @@ def press_e(coords: tuple) -> None:
     pydirectinput.press("e")
 
 
+def press_s() -> None:
+    """Presses s. Pressing s stop the movement of the tactician."""
+    pydirectinput.press("s")
+
 def move_mouse(coords: tuple) -> None:
     """Move the mouse to the specified coordinates.
 

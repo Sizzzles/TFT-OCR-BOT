@@ -311,7 +311,7 @@ class Game:
                 self.arena.clear_anvil()
                 self.arena.anvil_free[:2] = [True, False]
                 self.arena.clear_anvil()
-            self.arena.tacticians_crown_check()
+            #self.arena.tacticians_crown_check() # We have Tacticians Crown logic in self.arena.place_items()
             #self.arena.check_dummy()
 
         if self.round[0] == "3-7":
@@ -383,13 +383,13 @@ class Game:
             self.arena.clear_anvil()
         self.arena.spend_gold(speedy=self.round[0] in game_assets.PICKUP_ROUNDS)
         if (
-            seconds_in_round - (time.time() - self.start_time_of_round) >= 3.0
+            seconds_in_round - (time.time() - self.start_time_of_round) >= 5.0
         ):  # number picked randomly
             self.arena.move_champions()
         else:
             print("  Less than 3 seconds left in planning. No time to move champions.")
         if (
-            seconds_in_round - (time.time() - self.start_time_of_round) >= 3.0
+            seconds_in_round - (time.time() - self.start_time_of_round) >= 5.0
         ):  # number picked randomly
             self.arena.replace_unknown()
         else:
@@ -400,12 +400,13 @@ class Game:
             self.arena.final_comp_check()
         self.arena.bench_cleanup()
 
-        if (seconds_in_round - (time.time() - self.start_time_of_round)) >= 3.0 and (
+        if (seconds_in_round - (time.time() - self.start_time_of_round)) >= 5.0 and (
             self.round[0] in game_assets.ITEM_PLACEMENT_ROUNDS
-            or arena_functions.get_health() <= 15
+            or arena_functions.get_health() <= 35
             or len(self.arena.items) >= 8
         ):
             self.arena.place_items()
+            self.arena.add_random_items_on_strongest_champs_at_one_loss_left()
         else:
             print(
                 "  Less than 3 seconds left in planning. No time to give items to units."

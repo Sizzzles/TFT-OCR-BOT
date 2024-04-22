@@ -202,7 +202,7 @@ REFRESH_LOC: Vec2 = Vec2(364, 1039)
 DEFAULT_LOC: Vec2 = Vec2(60, 222)
 
 # Helps for reading items correctly
-DEFAULT_TACTICIAN_LOC: Vec2 = Vec2(466, 474)
+DEFAULT_TACTICIAN_LOC: Vec2 = Vec2(502, 496)
 
 # The area covering the number that is the tactician's level.
 TACTICIAN_LEVEL_POS: Vec4 = Vec4(GameWindow(316, 880, 332, 902))
@@ -219,3 +219,11 @@ SURRENDER_TWO_LOC: Vec2 = Vec2(832, 489)
 SECONDS_REMAINING_POS: Vec4 = Vec4(GameWindow(1128, 8, 1160, 30))
 
 SECONDS_REMAINING_LOC: Vec2 = Vec2(1143, 19)
+
+# When you right-click a unit and their info menu appears on the right-side of the screen.
+# These are the squares that display what items the unit is currently holding.
+UNIT_INFO_MENU_ITEM_SLOTS_POS: list[Vec4] = [
+    Vec4(GameWindow(1720, 488, 1772, 542)),
+    Vec4(GameWindow(1784, 488, 1836, 542)),
+    Vec4(GameWindow(1848, 488, 1900, 542)),
+    ]

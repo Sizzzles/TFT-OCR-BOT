@@ -15,6 +15,7 @@ import game_assets
 import mk_functions
 import ocr
 import screen_coords
+from champion import Champion
 from comps import CompsManager
 from vec4 import Vec4
 
@@ -51,7 +52,7 @@ def get_health() -> int:
     try:
         response = requests.get(
             "https://127.0.0.1:2999/liveclientdata/allgamedata",
-            timeout=20,
+            timeout=10,
             verify=False,
         )
         return int(response.json()["activePlayer"]["championStats"]["currentHealth"])
@@ -195,3 +196,44 @@ def get_seconds_remaining() -> int:
         return int(seconds)
     except ValueError:
         return -1
+
+def print_item_placed_on_champ(item: str, champ: Champion):
+    """Prints a message indicating that an item has been placed on a champion."""
+    print(f"      Placed {item} on {champ.name}")
+
+def move_item(start_location: tuple, destination: tuple):
+    """Moves an item from one location to another on the board"""
+    mk_functions.left_click(start_location)
+    sleep(0.01)
+    mk_functions.move_mouse(destination)
+    sleep(0.01)
+    mk_functions.left_click(destination)
+
+def count_number_of_item_slots_filled_on_unit(unit: Champion):
+    item_slots_filled = count_number_of_item_slots_filled_on_unit_at_coords(unit.coords)
+    set_number_of_item_slot_filled_on_unit(unit, item_slots_filled)
+
+
+def count_number_of_item_slots_filled_on_unit_at_coords(coordinates: tuple) -> int:
+    """Assumes the unit actually exists. Opens the info panel on a unit and then hovers over
+        the center of each item slot that displays in that screen. If the color of that slot is not close to black,
+        then we assume the item slot is filled. As soon as the check fails, we find a color close to black,
+        we can return how many items we've counted, because the item slots of a unit are filled up like a stack."""
+    print(f"    Counting how many items are on the unit at {coordinates}.")
+    item_slots_filled = 0
+    mk_functions.right_click(coordinates)
+    mk_functions.press_s()
+    # Search the unit's item slots from left to right.
+    threshold_value = 8
+    for positions in screen_coords.UNIT_INFO_MENU_ITEM_SLOTS_POS:
+        screen_capture = ImageGrab.grab(bbox=positions.get_coords())
+        screenshot_array = np.array(screen_capture)
+        if not (np.abs(screenshot_array - (0, 0, 0)) <= threshold_value).all(axis=2).any():
+            item_slots_filled += 1
+        else:
+            return item_slots_filled
+    return item_slots_filled
+
+def set_number_of_item_slot_filled_on_unit(unit: Champion, item_slots_filled: int):
+    print(f"  {unit.name} has had their number of item-slots-filled set from {unit.item_slots_filled} to {item_slots_filled}.")
+    unit.item_slots_filled = item_slots_filled

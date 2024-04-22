@@ -208,9 +208,33 @@ def load_lolchess_comps(input_str: str, set_str: str, comps_manager: CompsManage
                     each_slot.get("items", []),
                 )
 
+                recommend_items = []
+                for champion in query_data.get("champions", []):
+                    if champion.get("name") == champion_name:
+                        recommend_items = champion.get("recommendItems", [])
+                        break
+
+                # If items are stored under the "items" key
+                items_data = query_data.get("items", [])
+
+                # Extract item names from items_data and remove spaces, apostrophes and special characters
+                item_names = {
+                    item.get("key", ""): item.get("name", "")
+                    .replace(" ", "")
+                    .replace("'", "")
+                    .replace("\u2019", "")
+                    for item in items_data
+                }
+
+                # Replace recommend_items with item names if key matches
+                recommend_items = [
+                    item_names.get(item, item) for item in recommend_items
+                ]
+
                 slots[champion_name] = {
                     "board_position": LOLCHESS_BOARD_ARRANGE[each_slot.get("index")],
                     "items": slot_items,
+                    "recommendItems": recommend_items,
                     "level": star,
                     "final_comp": True,
                 }
@@ -268,7 +292,9 @@ def load_lolchess_comps(input_str: str, set_str: str, comps_manager: CompsManage
                     )
 
                     slots[champion_name] = {
-                        "board_position": LOLCHESS_BOARD_ARRANGE[each_slot.get("index")],
+                        "board_position": LOLCHESS_BOARD_ARRANGE[
+                            each_slot.get("index")
+                        ],
                         "items": slot_items,
                         "level": star,
                         "final_comp": True,

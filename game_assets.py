@@ -16,7 +16,7 @@ COMPONENT_ITEMS: set[str] = {
 }
 
 # Craftable non-emblem items
-CRAFTABLE_NON_EMBLEM_ITEMS: set[str] = {
+COMBINED_ITEMS: set[str] = {
     "AdaptiveHelm",
     "ArchangelsStaff",
     "Bloodthirster",
@@ -70,7 +70,7 @@ CRAFTABLE_EMBLEM_ITEMS: set[str] = {
 
 # Union of component, craftable non-emblem, and craftable emblem items
 COMPONENT_AND_CRAFTABLE_ITEMS: set[str] = COMPONENT_ITEMS.union(
-    CRAFTABLE_NON_EMBLEM_ITEMS
+    COMBINED_ITEMS
 ).union(CRAFTABLE_EMBLEM_ITEMS)
 
 # Support items
@@ -190,7 +190,7 @@ HOLDABLE_ITEMS: set[str] = (
 )
 
 FORCED_ITEMS: set[str] = (
-    CRAFTABLE_NON_EMBLEM_ITEMS.union(CRAFTABLE_EMBLEM_ITEMS)
+    COMBINED_ITEMS.union(CRAFTABLE_EMBLEM_ITEMS)
     .union(ELUSIVE_EMBLEM_ITEMS)
     .union(SUPPORT_ITEMS)
     .union(ARTIFACT_ITEMS)
@@ -384,7 +384,7 @@ CRAFTABLE_ITEMS_DICT = {
     "GiantSlayer": ("BFSword", "RecurveBow"),
     "Guardbreaker": ("GiantsBelt", "SparringGloves"),
     "GuinsoosRageblade": ("NeedlesslyLargeRod", "RecurveBow"),
-    "HandofJustice": ("SparringGloves", "TearoftheGoddess"),
+    "HandOfJustice": ("SparringGloves", "TearoftheGoddess"),
     "HeavenlyEmblem": ("Spatula", "NegatronCloak"),
     "HextechGunblade": ("BFSword", "NeedlesslyLargeRod"),
     "InfinityEdge": ("BFSword", "SparringGloves"),
