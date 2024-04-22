@@ -543,7 +543,7 @@ class Arena:
         if glove_item:
             # If glove item is available, add it to a champion
             no_build_champ = self.get_random_final_comp_champ_on_board_with_no_build()
-            if no_build_champ is not None and no_build_champ.item_slots_filled <= 0:
+            if no_build_champ is not None:
                 if self.add_gloves_to_champ(no_build_champ, glove_item):
                     return True
 
@@ -551,7 +551,7 @@ class Arena:
         if "Lucky Gloves" in self.augments:
             print("We have Lucky Gloves!")
             no_build_champ = self.get_random_final_comp_champ_on_board_with_no_build()
-            if no_build_champ is not None and no_build_champ.item_slots_filled <=0:
+            if no_build_champ is not None:
                 if self.add_gloves_to_champ(no_build_champ):
                     return True
 
@@ -576,7 +576,7 @@ class Arena:
 
         if glove_item:
             # Give the specified glove item to the champion
-            if glove_item in self.items:
+            if glove_item in self.items and champ.item_slots_filled <= 0:
                 gloves_index = self.items.index(glove_item)
                 arena_functions.move_item(
                     screen_coords.ITEM_POS[gloves_index][0].get_coords(), champ.coords
@@ -604,18 +604,19 @@ class Arena:
             and gloves_index_1 != gloves_index_2
         ):
             print("    We have 2 Sparring Gloves to make Thief's Gloves with!")
-            arena_functions.move_item(
-                screen_coords.ITEM_POS[gloves_index_1][0].get_coords(), champ.coords
-            )
-            print(f"      Placed {self.items[gloves_index_1]} on {champ.name}")
-            self.items[gloves_index_1] = None
-            arena_functions.move_item(
-                screen_coords.ITEM_POS[gloves_index_2][0].get_coords(), champ.coords
-            )
-            print(f"      Placed {self.items[gloves_index_2]} on {champ.name}")
-            self.items[gloves_index_2] = None
-            champ.item_slots_filled += 6
-            return True
+            if champ.item_slots_filled <=0:
+                arena_functions.move_item(
+                    screen_coords.ITEM_POS[gloves_index_1][0].get_coords(), champ.coords
+                )
+                print(f"      Placed {self.items[gloves_index_1]} on {champ.name}")
+                self.items[gloves_index_1] = None
+                arena_functions.move_item(
+                    screen_coords.ITEM_POS[gloves_index_2][0].get_coords(), champ.coords
+                )
+                print(f"      Placed {self.items[gloves_index_2]} on {champ.name}")
+                self.items[gloves_index_2] = None
+                champ.item_slots_filled += 6
+                return True
         return False
 
     def add_consumable_item_to_champ(self, champ: Champion, items_bench_index: int):
